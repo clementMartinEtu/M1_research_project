@@ -1,0 +1,9 @@
+.venv
+
+#pre trained dataset
+*.h5
+
+#checkpoints jupyter
+.ipynb_checkpoints
+
+*.pyc
