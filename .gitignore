@@ -1,3 +1,4 @@
+# Virtual environment
 .venv
 
 #pre trained dataset
@@ -6,4 +7,10 @@
 #checkpoints jupyter
 .ipynb_checkpoints
 
+#Python cache files
 *.pyc
+
+# Dataset zip file
+Data_AutomaticDetectionFlower.zip
+# Extracted images
+dossier_sortie/*
