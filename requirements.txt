@@ -2,11 +2,13 @@ numpy==1.18
 scipy>=1.5,<1.10
 Pillow
 cython
+pandas==1.1.5
 matplotlib>=3.0,<3.4
 scikit-image==0.16.2
 tensorflow==1.15.5
 keras==2.3.1
 opencv-python
+urllib3==1.26.16
 h5py==2.10.0
 imgaug==0.4.0
 jupyterlab
