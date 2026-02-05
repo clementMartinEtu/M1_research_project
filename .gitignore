@@ -1,5 +1,6 @@
 # Virtual environment
 .venv
+venv
 
 #pre trained dataset
 *.h5
@@ -12,8 +13,14 @@
 
 # Dataset zip file
 Data_AutomaticDetectionFlower.zip
+
 # Extracted images
 dossier_sortie/*
 
 # csv data files 
 data/*.csv
+
+# cloned repositories
+segment-anything-2
+detectron2
+
