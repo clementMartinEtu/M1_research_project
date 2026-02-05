@@ -7,7 +7,7 @@ from io import BytesIO
 
 def is_right_size(image):
     """
-    Check if the image has the correct dimensions (1024x768 or 768x1024).
+    Check if the image has the correct dimensions 1024x768 or 768x1024.
     
     :param image: PIL Image object
     """
@@ -54,13 +54,16 @@ def download_image(row, IMAGE_DIR):
         r = requests.get(url, stream=True)
         r.raise_for_status()
 
+        # Download the image iff it has the right dimensions
         img = Image.open(BytesIO(r.content))
         if is_right_size(img):
             with open(filepath, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
+            
+            return "downloaded"
         else:
-            return f"image skipped: image size {img.size} is not 1024x768 or 768x1024"
+            return f"skipped: image size {img.size} is not 1024x768 or 768x1024"
             
     except Exception as e:
         return f"error: {e}"
@@ -87,4 +90,4 @@ if __name__ == "__main__":
     for i in range(1, min(len(df), 50)):  # change range as needed
 
         result = download_image(df.iloc[i], IMAGE_DIR)
-        print(f'Image {i}/{len(df)-1}: Done')
+        print(f'Image {i}/{len(df)-1}: {result}')
