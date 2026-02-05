@@ -1,9 +1,44 @@
 import pandas as pd
 import requests
 import os
+from PIL import Image
+from io import BytesIO
 # from concurrent.futures import ThreadPoolExecutor, as_completed
 
+def is_right_size(image):
+    """
+    Check if the image has the correct dimensions (1024x768 or 768x1024).
+    
+    :param image: PIL Image object
+    """
+    width, height = image.size
+    return (width == 1024 and height == 768) or (width == 768 and height == 1024)
+
 def download_image(row, IMAGE_DIR):
+    """
+    Download an image based on information provided in a data row.
+
+    The function creates a directory for each species if it does not exist,
+    then downloads the corresponding image in large format and saves it locally.
+
+    Parameters
+    ----------
+    row : dict or pandas.Series
+        Data row containing at least:
+        - "species" : species name
+        - "image_id" : image identifier
+        - "url" : image URL (medium will be replaced by large)
+
+    IMAGE_DIR : str
+        Root directory where images will be stored.
+
+    Returns
+    -------
+    str or None
+        "already downloaded" if the image already exists,
+        "error: <message>" if an error occurs,
+        None if the download succeeds.
+    """
     species_dir = os.path.join(IMAGE_DIR, row["species"].replace(" ", "_"))
     os.makedirs(species_dir, exist_ok=True)
     print (f'Downloading image {row["image_id"]} of species {row["species"]}')
@@ -19,9 +54,13 @@ def download_image(row, IMAGE_DIR):
         r = requests.get(url, stream=True)
         r.raise_for_status()
 
-        with open(filepath, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+        img = Image.open(BytesIO(r.content))
+        if is_right_size(img):
+            with open(filepath, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        else:
+            return f"image skipped: image size {img.size} is not 1024x768 or 768x1024"
             
     except Exception as e:
         return f"error: {e}"
