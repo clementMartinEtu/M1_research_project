@@ -71,9 +71,9 @@ def download_image(row, IMAGE_DIR):
 if __name__ == "__main__":
     from sys import argv
 
-    if len(argv) == 2:
-        PATH_DIR = argv[0]
-        IMAGE_DIR = argv[1]
+    if len(argv) == 3:
+        PATH_DIR = argv[1]
+        IMAGE_DIR = argv[2]
     else:
         print("Usage: python download_flowers.py <path_to_csv> <image_directory>")
         exit(1)
@@ -90,4 +90,4 @@ if __name__ == "__main__":
     for i in range(1, min(len(df), 50)):  # change range as needed
 
         result = download_image(df.iloc[i], IMAGE_DIR)
-        print(f'Image {i}/{len(df)-1}: {result}')
+        print(f'Image {i}/{min(len(df), 50)-1}: {result}')
