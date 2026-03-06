@@ -34,9 +34,6 @@ def process_image(image_path, mask_generator):
     """
     pil_image = Image.open(image_path).convert("RGB")
 
-    # resize with PIL
-    # pil_image = pil_image.resize((512, 512))
-
     # convert to numpy
     image = np.array(pil_image)
 
@@ -68,7 +65,7 @@ def save_overlay(image, masks, output_path):
     plt.close()
 
 
-def process_folder(image_folder, mask_generator, mask_output, overlay_output):
+def process_folder(image_folder, mask_generator, mask_output, overlay_output, only_best_mask=False):
 
     os.makedirs(mask_output, exist_ok=True)
     os.makedirs(overlay_output, exist_ok=True)
@@ -88,7 +85,11 @@ def process_folder(image_folder, mask_generator, mask_output, overlay_output):
             print("No mask detected")
             continue
 
+
         # save masks
+        if only_best_mask:
+            masks = [best_mask]
+   
         mask_path = os.path.join(
             mask_output,
             f"{os.path.splitext(filename)[0]}_masks.npy"
