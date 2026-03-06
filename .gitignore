@@ -2,6 +2,9 @@
 .venv
 venv
 
+# json files
+*.json
+
 #pre trained dataset
 *.h5
 
@@ -18,10 +21,14 @@ Data_AutomaticDetectionFlower.zip
 # Extracted images
 dossier_sortie/*
 
-# csv data files 
-data/*.csv
+# dataset
+data/*
+images/*
+
+#output masks
+output_masks/*
+*.png
 
 # cloned repositories
 segment-anything-2
 detectron2
-
