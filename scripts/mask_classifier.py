@@ -1,3 +1,4 @@
+from detectron2.projects.DensePose.densepose.modeling.losses import mask
 import numpy as np
 from PIL import Image
 import os
@@ -5,9 +6,6 @@ import torch
 
 
 def extract_mask_crop(image, mask):
-
-    print("Image shape:", image.shape)
-    print("Mask shape:", mask["segmentation"].shape)
 
     x, y, w, h = mask["bbox"]
 
@@ -65,9 +63,43 @@ def process_mask_files(image_dir, mask_dir, crop_output):
 
         save_crops(crops, os.path.join(crop_output, image_name.split(".")[0]))
 
+def retrieve_right_masks():
+
+    PATH_FLOWERS = "../data/flowers/"
+
+    crops_by_id = {}
+    for crop in os.listdir(PATH_FLOWERS):
+
+        if not crop.endswith(".png"):
+            continue
+        
+        name, id, number = os.path.splitext(crop)[0].split("_")
+
+        crops_by_id[f"{name}_{id}"].append(int(number))
+
+    for name_id, numbers in crops_by_id.items():
+
+        mask_file = os.path.join("../output_masks/masks", f"{name_id}.npy")
+
+        # load masks
+        masks = np.load(mask_file, allow_pickle=True)
+
+        # stock indices that must be kept
+        indices = np.zeros(len(masks), dtype=bool)
+        indices[numbers] = True
+
+        masks_kept = masks[indices]
+
+        os.makedirs("../output_masks/masks_filtered", exist_ok=True)
+
+        mask_filtered_path = os.path.join("../output_masks/masks_filtered", f"{name_id}.npy")
+
+        # save filtered masks
+        np.save(mask_filtered_path, masks_kept)
+        
+
 if __name__ == "__main__":
     from sys import argv
-    #from SAM2_utils import load_sam2_model, process_folder
 
     if len(argv) == 4:
         PATH_DIR = argv[1]
@@ -83,11 +115,6 @@ if __name__ == "__main__":
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # For each image in the folder, generate masks and save crops
-    #mask_generator = load_sam2_model(sam2_checkpoint, model_cfg, device=device)
-
-    #process_folder(IMAGE_DIR, mask_generator, PATH_DIR, "output_masks")
 
     MASK_DIR = os.path.join(PATH_DIR, "masks")
     CROP_OUTPUT = os.path.join(PATH_DIR, "mask_crops")
