@@ -89,9 +89,6 @@ def process_folder(image_folder, mask_generator, mask_output, overlay_output, on
         # save masks
         if only_best_mask:
             masks = [best_mask]
-
-        for m in masks:
-            m["best_masks"] = []
    
         mask_path = os.path.join(
             mask_output,
