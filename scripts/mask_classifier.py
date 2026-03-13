@@ -73,9 +73,12 @@ def retrieve_right_masks():
         if not crop.endswith(".png"):
             continue
         
-        name, id, number = os.path.splitext(crop)[0].split("_")
+        name, flower_id, number = os.path.splitext(crop)[0].split("_")
 
-        crops_by_id[f"{name}_{id}"].append(int(number))
+        key = f"{name}_{flower_id}"
+        if key not in crops_by_id:
+            crops_by_id[key] = []
+        crops_by_id[key].append(int(number))
 
     for name_id, numbers in crops_by_id.items():
 
