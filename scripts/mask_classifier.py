@@ -23,13 +23,13 @@ def extract_all_crops(image, masks):
 
     return crops
 
-def save_crops(crops, output_folder):
+def save_crops(crops, output_folder, image_name="crop"):
 
     os.makedirs(output_folder, exist_ok=True)
 
     for i, crop in enumerate(crops):
         image = Image.fromarray(crop)
-        image.save(os.path.join(output_folder, f"mask_{i}.png"))
+        image.save(os.path.join(output_folder, f"{image_name}_{i}.png"))
 
     print(f"{len(crops)} crops saved to {output_folder}")
 
@@ -59,9 +59,11 @@ def process_mask_files(image_dir, mask_dir, crop_output):
 
         image = np.array(Image.open(image_path).convert("RGB"))
 
+        flowers_id = image_name.split(".")[0]
+
         crops = extract_all_crops(image, masks)
 
-        save_crops(crops, os.path.join(crop_output, image_name.split(".")[0]))
+        save_crops(crops, os.path.join(crop_output, flowers_id), flowers_id)
 
 def retrieve_right_masks():
 
