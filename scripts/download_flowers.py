@@ -3,7 +3,8 @@ import requests
 import os
 from PIL import Image
 from io import BytesIO
-# from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from sys import argv
 
 def is_right_size(image):
     """
@@ -69,7 +70,8 @@ def download_image(row, IMAGE_DIR):
         return f"error: {e}"
 
 if __name__ == "__main__":
-    from sys import argv
+
+    MAX_DOWNLOADS = 600 
 
     if len(argv) == 3:
         PATH_DIR = argv[1]
@@ -87,7 +89,7 @@ if __name__ == "__main__":
     )
 
     #download images
-    for i in range(1, min(len(df), 50)):  # change range as needed
+    for i in range(1, min(len(df), MAX_DOWNLOADS)):  # change range as needed
 
         result = download_image(df.iloc[i], IMAGE_DIR)
-        print(f'Image {i}/{min(len(df), 50)-1}: {result}')
+        print(f'Image {i}/{min(len(df), MAX_DOWNLOADS)-1}: {result}')
