@@ -52,17 +52,21 @@ def save_overlay(image, masks, output_path):
     """
     Save overlay visualization
     """
-    plt.figure(figsize=(8,8))
-    plt.imshow(image)
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    ax.imshow(image)
 
     for mask in masks:
         m = mask["segmentation"]
         color = (random.random(), random.random(), random.random())
-        plt.contour(m, colors=[color], linewidths=0.5)
+        ax.contour(m, colors=[color], linewidths=0.5)
 
-    plt.axis("off")
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    ax.axis("off")
+    fig.savefig(output_path, dpi=200, bbox_inches="tight")  # 1600×1600px
+
+    fig.clf()
+    plt.close(fig)
+    plt.close("all")
+
 
 
 def process_folder(image_folder, mask_generator, mask_output, overlay_output, only_best_mask=False):
@@ -104,6 +108,7 @@ def process_folder(image_folder, mask_generator, mask_output, overlay_output, on
         )
 
         save_overlay(image, masks, overlay_path)
+        plt.close("all")
 
         print(f"Saved overlay → {overlay_path}")
 
