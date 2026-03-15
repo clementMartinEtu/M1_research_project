@@ -1,8 +1,10 @@
-from detectron2.projects.DensePose.densepose.modeling.losses import mask
 import numpy as np
 from PIL import Image
 import os
 import torch
+from torchvision import transforms, datasets
+from torchvision.models import models
+from torch.utils.data import DataLoader
 
 
 def extract_mask_crop(image, mask):
@@ -101,26 +103,101 @@ def retrieve_right_masks():
 
         # save filtered masks
         np.save(mask_filtered_path, masks_kept)
+
+def create_dataset():
+
+    dataset = datasets.ImageFolder(
+        "../data/CNN_dataset",
+        transform=transforms.ToTensor()
+    )
+
+    # split into train and test
+    # the train dataset have 80% of the data and the test dataset have 20% of the data
+    traindata, testdata = torch.utils.data.random_split(dataset, [int(0.8*len(dataset)), len(dataset) - int(0.8*len(dataset))])
+    train_loader = DataLoader(traindata, batch_size=32, shuffle=True)
+    test_loader = DataLoader(testdata, batch_size=32, shuffle=False)
+
+    return train_loader, test_loader
+
+def train_model(model):
+
+    # model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+
+    # Freeze parameters
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Replace final layer for binary classification
+    model.fc = torch.nn.Sequential(
+        torch.nn.Dropout(0.3),
+        torch.nn.Linear(512, 1),
+        torch.nn.Sigmoid()
+    )
+
+    return model
+
+def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, device="cpu"):
+
+    model.to(device)
+
+    for epoch in range(epochs):
+
+        # --- Training ---
+        model.train()
+        train_loss = 0
+
+        for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)
+            labels = labels.float().unsqueeze(1)
+
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss.item()
+
+        # --- Validation ---
+        model.eval()
+        val_loss = 0
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for images, labels in test_loader:
+                images, labels = images.to(device), labels.to(device)
+                labels = labels.float().unsqueeze(1)
+
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+                predicted = (outputs >= 0.5).float()
+                correct += (predicted == labels).sum().item()
+                total += labels.size(0)
+
+        print(f"Epoch {epoch+1}/{epochs} "
+              f"| Train Loss: {train_loss/len(train_loader):.4f} "
+              f"| Val Loss: {val_loss/len(test_loader):.4f} "
+              f"| Val Acc: {100*correct/total:.1f}%")
+
+
+
         
 
 if __name__ == "__main__":
     from sys import argv
 
-    if len(argv) == 4:
-        PATH_DIR = argv[1]
-        IMAGE_DIR = argv[2]
-        MASK_OUTPUT_DIR = argv[3]
+    if len(argv) == 2:
+        IMAGE_DIR = argv[1]
     else:
-        print("Usage: python mask_classifier.py <path_to_csv> <image_directory> <mask_output_directory>")
+        print("Usage: python mask_classifier.py <image_directory>")
         exit(1)
-    
-
-    # Use the correct config path format
-    sam2_checkpoint = "/mnt/c/Users/maner/git/projet-de-recherche-etude-de-biodiversite/segment-anything-2/checkpoints/sam2.1_hiera_large.pt"
-    model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    PATH_DIR = "../output_masks"
     MASK_DIR = os.path.join(PATH_DIR, "masks")
     CROP_OUTPUT = os.path.join(PATH_DIR, "mask_crops")
 
