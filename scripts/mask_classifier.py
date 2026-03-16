@@ -104,37 +104,35 @@ def retrieve_right_masks():
         # save filtered masks
         np.save(mask_filtered_path, masks_kept)
 
-def create_dataset():
+def create_dataset(seed=42):
+
+    transforms = transforms.Compose([
+        transforms.Pad(25),
+        transforms.Resize((64, 64)),
+        transforms.ToTensor(),
+        transforms.transforms.Normalize([0.5,0.5,0.5], [0.5,0.5,0.5])
+    ])
 
     dataset = datasets.ImageFolder(
         "../data/CNN_dataset",
-        transform=transforms.ToTensor()
+        transform=transforms
     )
+
+    resized_dataset = resize_crops(dataset)
+
+    torch.manual_seed(seed=seed)
 
     # split into train and test
     # the train dataset have 80% of the data and the test dataset have 20% of the data
-    traindata, testdata = torch.utils.data.random_split(dataset, [int(0.8*len(dataset)), len(dataset) - int(0.8*len(dataset))])
-    train_loader = DataLoader(traindata, batch_size=32, shuffle=True)
-    test_loader = DataLoader(testdata, batch_size=32, shuffle=False)
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+
+    train_data, test_data = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
     return train_loader, test_loader
-
-def train_model(model):
-
-    # model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-
-    # Freeze parameters
-    for param in model.parameters():
-        param.requires_grad = False
-
-    # Replace final layer for binary classification
-    model.fc = torch.nn.Sequential(
-        torch.nn.Dropout(0.3),
-        torch.nn.Linear(512, 1),
-        torch.nn.Sigmoid()
-    )
-
-    return model
 
 def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, device="cpu"):
 
@@ -181,8 +179,6 @@ def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, dev
               f"| Train Loss: {train_loss/len(train_loader):.4f} "
               f"| Val Loss: {val_loss/len(test_loader):.4f} "
               f"| Val Acc: {100*correct/total:.1f}%")
-
-
 
         
 
