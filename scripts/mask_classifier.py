@@ -3,9 +3,9 @@ from PIL import Image
 import os
 import torch
 from torchvision import transforms, datasets
-from torchvision.models import models
 from torch.utils.data import DataLoader
 
+from tqdm import tqdm
 
 def extract_mask_crop(image, mask):
 
@@ -67,9 +67,7 @@ def process_mask_files(image_dir, mask_dir, crop_output):
 
         save_crops(crops, os.path.join(crop_output, flowers_id), flowers_id)
 
-def retrieve_right_masks():
-
-    PATH_FLOWERS = "../data/flowers/"
+def retrieve_right_masks(PATH_FLOWERS="../data/flowers/", PATH_MASKS="../output_masks/"):
 
     crops_by_id = {}
     for crop in os.listdir(PATH_FLOWERS):
@@ -85,8 +83,8 @@ def retrieve_right_masks():
         crops_by_id[key].append(int(number))
 
     for name_id, numbers in crops_by_id.items():
-
-        mask_file = os.path.join("../output_masks/masks", f"{name_id}.npy")
+        
+        mask_file = os.path.join(PATH_MASKS,"masks", f"{name_id}_masks.npy")
 
         # load masks
         masks = np.load(mask_file, allow_pickle=True)
@@ -97,28 +95,31 @@ def retrieve_right_masks():
 
         masks_kept = masks[indices]
 
-        os.makedirs("../output_masks/masks_filtered", exist_ok=True)
+        PATH_MASKS_FILTERED = os.path.join(PATH_MASKS, "masks_filtered")
 
-        mask_filtered_path = os.path.join("../output_masks/masks_filtered", f"{name_id}.npy")
+        os.makedirs(PATH_MASKS_FILTERED, exist_ok=True)
+
+        mask_filtered_path = os.path.join(PATH_MASKS_FILTERED, f"{name_id}_masks.npy")
 
         # save filtered masks
         np.save(mask_filtered_path, masks_kept)
 
-def create_dataset(seed=42):
+def create_dataset(batch_size=32, seed=42):
 
-    transforms = transforms.Compose([
+    transform = transforms.Compose([
         transforms.Pad(25),
         transforms.Resize((64, 64)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2),
         transforms.ToTensor(),
         transforms.transforms.Normalize([0.5,0.5,0.5], [0.5,0.5,0.5])
     ])
 
     dataset = datasets.ImageFolder(
         "../data/CNN_dataset",
-        transform=transforms
+        transform=transform
     )
-
-    resized_dataset = resize_crops(dataset)
 
     torch.manual_seed(seed=seed)
 
@@ -129,22 +130,36 @@ def create_dataset(seed=42):
 
     train_data, test_data = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
+
 
 def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, device="cpu"):
 
     model.to(device)
 
-    for epoch in range(epochs):
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
+    best_val_loss = float('inf')
+
+    epoch_bar = tqdm(range(epochs), desc="Training", unit="epoch")
+
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "val_acc": []
+    }
+
+    for epoch in epoch_bar:
 
         # --- Training ---
         model.train()
         train_loss = 0
 
-        for images, labels in train_loader:
+        train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} [Train]", 
+                         leave=False, unit="batch")
+        for images, labels in train_bar:
             images, labels = images.to(device), labels.to(device)
             labels = labels.float().unsqueeze(1)
 
@@ -156,14 +171,19 @@ def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, dev
 
             train_loss += loss.item()
 
+            # Live loss update on the training bar
+            train_bar.set_postfix(loss=f"{loss.item():.4f}")
+
         # --- Validation ---
         model.eval()
         val_loss = 0
         correct = 0
         total = 0
 
+        val_bar = tqdm(test_loader, desc=f"Epoch {epoch+1}/{epochs} [Val]  ", 
+                       leave=False, unit="batch")
         with torch.no_grad():
-            for images, labels in test_loader:
+            for images, labels in val_bar:
                 images, labels = images.to(device), labels.to(device)
                 labels = labels.float().unsqueeze(1)
 
@@ -171,16 +191,36 @@ def train(train_loader, test_loader, optimizer, criterion, model, epochs=10, dev
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
 
-                predicted = (outputs >= 0.5).float()
+                predicted = (outputs >= 0.0).float()
                 correct += (predicted == labels).sum().item()
                 total += labels.size(0)
 
-        print(f"Epoch {epoch+1}/{epochs} "
-              f"| Train Loss: {train_loss/len(train_loader):.4f} "
-              f"| Val Loss: {val_loss/len(test_loader):.4f} "
-              f"| Val Acc: {100*correct/total:.1f}%")
+                # Live loss update on the validation bar
+                val_bar.set_postfix(loss=f"{loss.item():.4f}")
 
-        
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_loss = val_loss / len(test_loader)
+        avg_val_acc = 100 * correct / total
+
+        scheduler.step(avg_val_loss)
+
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), 'best_model.pth')
+
+        history["train_loss"].append(avg_train_loss)
+        history["val_loss"].append(avg_val_loss)
+        history["val_acc"].append(avg_val_acc)
+
+        # Update outer epoch bar with final metrics
+        epoch_bar.set_postfix(
+            train_loss=f"{avg_train_loss:.4f}",
+            val_loss=f"{avg_val_loss:.4f}",
+            val_acc=f"{100*correct/total:.1f}%",
+            best=f"{best_val_loss:.4f}"
+        )
+
+    return history
 
 if __name__ == "__main__":
     from sys import argv
