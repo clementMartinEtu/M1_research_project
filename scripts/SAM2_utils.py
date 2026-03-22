@@ -48,7 +48,7 @@ def process_image(image_path, mask_generator):
     return image, best_mask, masks
 
 
-def save_overlay(image, masks, output_path):
+def save_overlay(image, masks, output_path, linewidth=0.5):
     """
     Save overlay visualization
     """
@@ -58,7 +58,7 @@ def save_overlay(image, masks, output_path):
     for mask in masks:
         m = mask["segmentation"]
         color = (random.random(), random.random(), random.random())
-        ax.contour(m, colors=[color], linewidths=0.5)
+        ax.contour(m, colors=[color], linewidths=linewidth)
 
     ax.axis("off")
     fig.savefig(output_path, dpi=200, bbox_inches="tight")  # 1600×1600px
@@ -69,7 +69,7 @@ def save_overlay(image, masks, output_path):
 
 
 
-def process_folder(image_folder, mask_generator, mask_output, overlay_output, only_best_mask=False):
+def process_folder(image_folder, mask_generator, mask_output, overlay_output, only_best_mask=False, linewidth=0.5):
 
     os.makedirs(mask_output, exist_ok=True)
     os.makedirs(overlay_output, exist_ok=True)
@@ -107,7 +107,7 @@ def process_folder(image_folder, mask_generator, mask_output, overlay_output, on
             f"{os.path.splitext(filename)[0]}_overlay.png"
         )
 
-        save_overlay(image, masks, overlay_path)
+        save_overlay(image, masks, overlay_path, linewidth=linewidth)
         plt.close("all")
 
         print(f"Saved overlay → {overlay_path}")
