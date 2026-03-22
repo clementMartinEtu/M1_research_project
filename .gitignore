@@ -23,6 +23,8 @@ dossier_sortie/*
 
 # dataset
 data/*
+!data/test
+!data/test/**
 images/*
 
 #output masks
