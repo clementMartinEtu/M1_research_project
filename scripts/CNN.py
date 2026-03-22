@@ -17,7 +17,6 @@ class SmallCNN(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.4),
             nn.Linear(512, 1),
-            nn.Sigmoid()
         )
 
     def forward(self, x):
