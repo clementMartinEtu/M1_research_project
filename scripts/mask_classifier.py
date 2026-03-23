@@ -147,7 +147,7 @@ def create_dataset(batch_size=32, seed=42):
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    dataset = datasets.ImageFolder("../data/CNN_dataset", transform=transform)
+    dataset = datasets.ImageFolder("../data/CNN_dataset/train", transform=transform)
     torch.manual_seed(seed=seed)
 
     # split into train and test
