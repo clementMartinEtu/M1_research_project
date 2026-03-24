@@ -127,6 +127,14 @@ Images are saved to `<image_directory>/<species_name>/` and only kept if they ma
 
 Those arbitrary sizes as been selected to match with a future work using a Mask R-CNN architecture with a great quality.
 
+If you want to deal with a massive number of masks to crop, you could use this command:
+
+```bash
+python mask_classifier.py <image_directory>
+```
+
+`<image_directory>` should be the past the folder where the original images are stored, it means that the images without any mask since we use those image as a basis to crop the masks.
+
 ---
 
 ## Training
@@ -176,4 +184,4 @@ The final cell of the notebook displays a side-by-side comparison for each test 
 - **Left** — original image with all SAM2 masks overlaid
 - **Right** — same image with only CNN-approved flower masks
 
-The CNN reached **95.8% validation accuracy** after 30 epochs on the flower / non-flower classification task, significantly reducing the number of spurious masks in the final output.
+The CNN reached **95.8% validation accuracy** after 30 epochs on the flower / non-flower classification task, significantly reducing the number of badly classified masks in the final output.
