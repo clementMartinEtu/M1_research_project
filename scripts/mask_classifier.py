@@ -171,7 +171,7 @@ def train(train_loader, test_loader, optimizer, criterion, model, epochs= 10, de
         train_loader (DataLoader): DataLoader for the training set.
         test_loader (DataLoader): DataLoader for the validation set.
         optimizer (torch.optim.Optimizer): PyTorch optimizer.
-        criterion (nn.Module): Loss function — must be BCEWithLogitsLoss.
+        criterion (nn.Module): Loss function.
         model (nn.Module): PyTorch model instance.
         epochs (int): Number of training epochs.
         device (str): 'cuda' or 'cpu'.

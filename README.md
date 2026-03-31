@@ -67,7 +67,9 @@ Filtered masks (.npy)
 │   └── mask_classifier.py    # Crop extraction, CNN training, mask filtering
 ├── notebooks/
 │   ├── sam2_test.ipynb       # SAM2 segmentation test notebook
-│   └── filter_train.ipynb      # Full training notebook
+│   ├── filter_train.ipynb    # Full training notebook
+│   ├── sam2_kaggle.ipynb     # Sam2 segmentation on Kaggle notebook used for large-scale segmentation
+│   └── best_model.pth        # Trained CNN model weights
 ├── requirements.txt
 └── README.md
 ```
